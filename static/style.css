@@ -1,0 +1,237 @@
+/* Calibration Gage Manager - Simple Styles */
+
+:root {
+    --bg: #f5f5f5;
+    --card-bg: #fff;
+    --text: #333;
+    --accent: #2563eb;
+    --accent-hover: #1d4ed8;
+    --border: #ddd;
+    --success: #059669;
+    --error: #dc2626;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+}
+
+header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+header h1 a {
+    color: var(--text);
+    text-decoration: none;
+}
+
+header h1 a:hover {
+    color: var(--accent);
+}
+
+nav a {
+    margin-left: 1.5rem;
+    color: var(--accent);
+    text-decoration: none;
+}
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+h2 {
+    margin-top: 0;
+    font-size: 1.125rem;
+}
+
+/* Flash messages */
+.flash-messages {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem 0;
+}
+
+.flash {
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
+
+.flash.success {
+    background: #d1fae5;
+    color: var(--success);
+}
+
+.flash.error {
+    background: #fee2e2;
+    color: var(--error);
+}
+
+/* Table */
+.gages-list {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+
+th {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+.actions {
+    white-space: nowrap;
+}
+
+.actions a,
+.actions button {
+    margin-right: 0.75rem;
+}
+
+.actions form.inline {
+    display: inline;
+}
+
+.actions button {
+    background: none;
+    border: none;
+    color: var(--error);
+    cursor: pointer;
+    font-size: inherit;
+    padding: 0;
+    text-decoration: underline;
+}
+
+.actions button:hover {
+    color: #b91c1c;
+}
+
+.actions a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.actions a:hover {
+    text-decoration: underline;
+}
+
+.empty {
+    color: #666;
+}
+
+.empty a {
+    color: var(--accent);
+}
+
+/* Forms */
+.form-section {
+    background: var(--card-bg);
+    padding: 1.5rem;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    max-width: 480px;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-row .form-group {
+    flex: 1;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+}
+
+input, select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+input:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.form-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+button[type="submit"] {
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.25rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background: var(--accent-hover);
+}
+
+.btn-cancel {
+    color: #666;
+    text-decoration: none;
+}
+
+.btn-cancel:hover {
+    color: var(--text);
+    text-decoration: underline;
+}
