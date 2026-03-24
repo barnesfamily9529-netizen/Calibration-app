@@ -23,15 +23,33 @@ def get_db():
 def init_db():
     """Initialize database and create tables if they don't exist."""
     conn = get_db()
+    cur = conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='gages'"
+    )
+    if cur.fetchone():
+        info = conn.execute("PRAGMA table_info(gages)").fetchall()
+        cols = [r[1] for r in info]
+        if "location" in cols or "month_code" not in cols:
+            conn.execute("DROP TABLE gages")
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS gages (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             gage_id TEXT NOT NULL UNIQUE,
+            month_code TEXT,
+            number TEXT,
+            gage_type TEXT,
             description TEXT,
-            location TEXT,
-            last_calibration TEXT,
-            next_calibration_due TEXT,
+            manufacturer TEXT,
+            model TEXT,
+            serial TEXT,
+            cert_number TEXT,
+            cal_date TEXT,
+            due_date TEXT,
+            interval_years REAL,
+            condition TEXT,
             status TEXT DEFAULT 'Active',
+            comments TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
@@ -39,39 +57,137 @@ def init_db():
     conn.close()
 
 
+def _strip(value):
+    """Return stripped string or None if empty."""
+    if value is None:
+        return None
+    s = str(value).strip()
+    return s if s else None
+
+
+def _get_form_gage(request):
+    """Extract gage data from request form."""
+    from datetime import datetime, timedelta
+
+    interval = request.form.get("interval_years", "").strip()
+    cal_date = _strip(request.form.get("cal_date")) or None
+    due_date = _strip(request.form.get("due_date")) or None
+
+    interval_years = float(interval) if interval else None
+
+    if cal_date and interval_years is not None and not due_date:
+        try:
+            cal_date_obj = datetime.strptime(cal_date, "%Y-%m-%d").date()
+            due_date_obj = cal_date_obj + timedelta(days=round(interval_years * 365))
+            due_date = due_date_obj.isoformat()
+        except ValueError:
+            pass
+
+    return {
+        "gage_id": _strip(request.form.get("gage_id")),
+        "month_code": _strip(request.form.get("month_code")),
+        "number": _strip(request.form.get("number")),
+        "gage_type": _strip(request.form.get("gage_type")),
+        "description": _strip(request.form.get("description")),
+        "manufacturer": _strip(request.form.get("manufacturer")),
+        "model": _strip(request.form.get("model")),
+        "serial": _strip(request.form.get("serial")),
+        "cert_number": _strip(request.form.get("cert_number")),
+        "cal_date": cal_date,
+        "due_date": due_date,
+        "interval_years": interval_years,
+        "condition": _strip(request.form.get("condition")),
+        "status": _strip(request.form.get("status")) or "Active",
+        "comments": _strip(request.form.get("comments")),
+    }
+
+
+@app.route("/")
 @app.route("/")
 def index():
-    """List all calibration gages."""
+    """List and filter calibration gages."""
+    from datetime import date, timedelta
+
+    search = (request.args.get("search") or "").strip()
+    status_filter = (request.args.get("status") or "").strip()
+    overdue_only = request.args.get("overdue") == "1"
+
     conn = get_db()
-    gages = conn.execute(
-        "SELECT * FROM gages ORDER BY next_calibration_due ASC"
-    ).fetchall()
+
+    query = "SELECT * FROM gages WHERE 1=1"
+    params = []
+
+    if search:
+        query += """
+            AND (
+                gage_id LIKE ?
+                OR gage_type LIKE ?
+                OR description LIKE ?
+                OR manufacturer LIKE ?
+            )
+        """
+        like_term = f"%{search}%"
+        params.extend([like_term, like_term, like_term, like_term])
+
+    if status_filter:
+        query += " AND status = ?"
+        params.append(status_filter)
+
+    query += " ORDER BY due_date ASC, gage_id ASC"
+
+    gages = conn.execute(query, params).fetchall()
     conn.close()
-    return render_template("index.html", gages=gages)
+
+    today = date.today()
+    today_iso = today.isoformat()
+
+    due_soon_dates = set()
+    for i in range(0, 31):
+        due_soon_dates.add((today + timedelta(days=i)).isoformat())
+
+    if overdue_only:
+        filtered_gages = []
+        for gage in gages:
+            due_date = gage["due_date"] or ""
+            status = gage["status"] or ""
+            if due_date and status == "Active" and due_date < today_iso:
+                filtered_gages.append(gage)
+        gages = filtered_gages
+
+    return render_template(
+        "index.html",
+        gages=gages,
+        today=today_iso,
+        due_soon_dates=due_soon_dates,
+        search=search,
+        status_filter=status_filter,
+        overdue_only=overdue_only,
+    )
 
 
 @app.route("/add", methods=["GET", "POST"])
 def add():
     """Add a new calibration gage."""
     if request.method == "POST":
-        gage_id = request.form.get("gage_id", "").strip()
-        description = request.form.get("description", "").strip()
-        location = request.form.get("location", "").strip()
-        last_calibration = request.form.get("last_calibration", "").strip() or None
-        next_calibration_due = request.form.get("next_calibration_due", "").strip() or None
-        status = request.form.get("status", "Active").strip()
-
-        if not gage_id:
+        g = _get_form_gage(request)
+        if not g["gage_id"]:
             flash("Gage ID is required.", "error")
             return redirect(url_for("add"))
 
         conn = get_db()
         try:
             conn.execute(
-                """INSERT INTO gages (gage_id, description, location, 
-                   last_calibration, next_calibration_due, status)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
-                (gage_id, description, location, last_calibration, next_calibration_due, status),
+                """INSERT INTO gages (
+                    gage_id, month_code, number, gage_type, description,
+                    manufacturer, model, serial, cert_number, cal_date,
+                    due_date, interval_years, condition, status, comments
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    g["gage_id"], g["month_code"], g["number"], g["gage_type"],
+                    g["description"], g["manufacturer"], g["model"], g["serial"],
+                    g["cert_number"], g["cal_date"], g["due_date"],
+                    g["interval_years"], g["condition"], g["status"], g["comments"],
+                ),
             )
             conn.commit()
             flash("Gage added successfully.", "success")
@@ -97,24 +213,26 @@ def edit(gage_pk):
         return redirect(url_for("index"))
 
     if request.method == "POST":
-        gage_id = request.form.get("gage_id", "").strip()
-        description = request.form.get("description", "").strip()
-        location = request.form.get("location", "").strip()
-        last_calibration = request.form.get("last_calibration", "").strip() or None
-        next_calibration_due = request.form.get("next_calibration_due", "").strip() or None
-        status = request.form.get("status", "Active").strip()
-
-        if not gage_id:
+        g = _get_form_gage(request)
+        if not g["gage_id"]:
             flash("Gage ID is required.", "error")
             conn.close()
             return redirect(url_for("edit", gage_pk=gage_pk))
 
         try:
             conn.execute(
-                """UPDATE gages SET gage_id=?, description=?, location=?,
-                   last_calibration=?, next_calibration_due=?, status=?
-                   WHERE id=?""",
-                (gage_id, description, location, last_calibration, next_calibration_due, status, gage_pk),
+                """UPDATE gages SET
+                    gage_id=?, month_code=?, number=?, gage_type=?, description=?,
+                    manufacturer=?, model=?, serial=?, cert_number=?, cal_date=?,
+                    due_date=?, interval_years=?, condition=?, status=?, comments=?
+                    WHERE id=?""",
+                (
+                    g["gage_id"], g["month_code"], g["number"], g["gage_type"],
+                    g["description"], g["manufacturer"], g["model"], g["serial"],
+                    g["cert_number"], g["cal_date"], g["due_date"],
+                    g["interval_years"], g["condition"], g["status"], g["comments"],
+                    gage_pk,
+                ),
             )
             conn.commit()
             flash("Gage updated successfully.", "success")

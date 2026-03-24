@@ -3,44 +3,99 @@
 {% block title %}Calibration Gages - Calibration Gage Manager{% endblock %}
 
 {% block content %}
-<section class="gages-list">
+<section class="gages-list form-section form-wide">
     <h2>Calibration Gages</h2>
 
+    <form method="get" class="filter-form">
+        <input
+            type="text"
+            name="search"
+            placeholder="Search gage ID, type, description, manufacturer"
+            value="{{ search or '' }}"
+        >
+
+        <select name="status">
+            <option value="">All Statuses</option>
+            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+            <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
+            <option value="Out of Service" {% if status_filter == 'Out of Service' %}selected{% endif %}>Out of Service</option>
+            <option value="Review" {% if status_filter == 'Review' %}selected{% endif %}>Review</option>
+        </select>
+
+        <label class="checkbox-label">
+            <input
+                type="checkbox"
+                name="overdue"
+                value="1"
+                {% if overdue_only %}checked{% endif %}
+            >
+            Overdue only
+        </label>
+
+        <button type="submit">Search</button>
+        <a href="{{ url_for('index') }}" class="btn-cancel">Clear</a>
+    </form>
+
     {% if gages %}
-    <table>
-        <thead>
-            <tr>
-                <th>Gage ID</th>
-                <th>Description</th>
-                <th>Location</th>
-                <th>Last Calibration</th>
-                <th>Next Due</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for gage in gages %}
-            <tr>
-                <td>{{ gage['gage_id'] }}</td>
-                <td>{{ gage['description'] or '-' }}</td>
-                <td>{{ gage['location'] or '-' }}</td>
-                <td>{{ gage['last_calibration'] or '-' }}</td>
-                <td>{{ gage['next_calibration_due'] or '-' }}</td>
-                <td>{{ gage['status'] }}</td>
-                <td class="actions">
-                    <a href="{{ url_for('edit', gage_pk=gage['id']) }}">Edit</a>
-                    <form action="{{ url_for('delete', gage_pk=gage['id']) }}" method="post" class="inline"
-                          onsubmit="return confirm('Delete this gage?');">
-                        <button type="submit">Delete</button>
-                    </form>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Gage ID</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Manufacturer</th>
+                    <th>Cert #</th>
+                    <th>Serial</th>
+                    <th>Cal Date</th>
+                    <th>Due Date</th>
+                    <th>Condition</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for gage in gages %}
+                {% set due_date = gage['due_date'] or '' %}
+                {% set row_class = '' %}
+
+                {% if due_date and gage['status'] == 'Active' %}
+                    {% if due_date < today %}
+                        {% set row_class = 'overdue' %}
+                    {% elif due_soon_dates and due_date in due_soon_dates %}
+                        {% set row_class = 'due-soon' %}
+                    {% endif %}
+                {% endif %}
+
+                <tr class="{{ row_class }}">
+                    <td>{{ gage['gage_id'] }}</td>
+                    <td>{{ gage['gage_type'] or '-' }}</td>
+                    <td>{{ gage['description'] or '-' }}</td>
+                    <td>{{ gage['manufacturer'] or '-' }}</td>
+                    <td>{{ gage['cert_number'] or '-' }}</td>
+                    <td>{{ gage['serial'] or '-' }}</td>
+                    <td>{{ gage['cal_date'] or '-' }}</td>
+                    <td>{{ gage['due_date'] or '-' }}</td>
+                    <td>{{ gage['condition'] or '-' }}</td>
+                    <td>
+                        <span class="status-pill status-{{ (gage['status'] or 'active')|lower|replace(' ', '-') }}">
+                            {{ gage['status'] }}
+                        </span>
+                    </td>
+                    <td class="actions">
+                        <a href="{{ url_for('edit', gage_pk=gage['id']) }}">Edit</a>
+                        <form action="{{ url_for('delete', gage_pk=gage['id']) }}" method="post" class="inline"
+                              onsubmit="return confirm('Delete this gage?');">
+                            <button type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
     {% else %}
-    <p class="empty">No calibration gages yet. <a href="{{ url_for('add') }}">Add your first gage</a>.</p>
+    <p class="empty">No matching calibration gages found.</p>
     {% endif %}
 </section>
 {% endblock %}

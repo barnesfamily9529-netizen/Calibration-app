@@ -3,45 +3,129 @@
 {% block title %}Edit Gage - Calibration Gage Manager{% endblock %}
 
 {% block content %}
-<section class="form-section">
+<section class="form-section form-wide">
     <h2>Edit Calibration Gage</h2>
 
     <form method="post" action="{{ url_for('edit', gage_pk=gage['id']) }}">
-        <div class="form-group">
-            <label for="gage_id">Gage ID *</label>
-            <input type="text" id="gage_id" name="gage_id" required maxlength="100"
-                   value="{{ gage['gage_id'] }}">
-        </div>
-        <div class="form-group">
-            <label for="description">Description</label>
-            <input type="text" id="description" name="description" maxlength="255"
-                   value="{{ gage['description'] or '' }}">
-        </div>
-        <div class="form-group">
-            <label for="location">Location</label>
-            <input type="text" id="location" name="location" maxlength="100"
-                   value="{{ gage['location'] or '' }}">
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label for="last_calibration">Last Calibration</label>
-                <input type="date" id="last_calibration" name="last_calibration"
-                       value="{{ gage['last_calibration'] or '' }}">
+        <div class="form-section-group">
+            <h3>Identification</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="gage_id">Gage ID *</label>
+                    <input type="text" id="gage_id" name="gage_id" required maxlength="100"
+                           value="{{ gage['gage_id'] }}">
+                </div>
+                <div class="form-group">
+                    <label for="month_code">Month Code</label>
+                    <input type="text" id="month_code" name="month_code" maxlength="20"
+                           value="{{ gage['month_code'] or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="number">Number</label>
+                    <input type="text" id="number" name="number" maxlength="50"
+                           value="{{ gage['number'] or '' }}">
+                </div>
             </div>
-            <div class="form-group">
-                <label for="next_calibration_due">Next Calibration Due</label>
-                <input type="date" id="next_calibration_due" name="next_calibration_due"
-                       value="{{ gage['next_calibration_due'] or '' }}">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="gage_type">Gage Type</label>
+                    <select id="gage_type" name="gage_type">
+                        <option value="" {{ 'selected' if not gage['gage_type'] else '' }}>Select gage type</option>
+                        <option value="Fixed Position Gages" {{ 'selected' if gage['gage_type'] == 'Fixed Position Gages' else '' }}>Fixed Position Gages</option>
+                        <option value="Dial/Digital" {{ 'selected' if gage['gage_type'] == 'Dial/Digital' else '' }}>Dial/Digital</option>
+                        <option value="Thread Ring" {{ 'selected' if gage['gage_type'] == 'Thread Ring' else '' }}>Thread Ring</option>
+                        <option value="Thread Plug" {{ 'selected' if gage['gage_type'] == 'Thread Plug' else '' }}>Thread Plug</option>
+                        <option value="Masters" {{ 'selected' if gage['gage_type'] == 'Masters' else '' }}>Masters</option>
+                    </select>
+                </div>
+                <div class="form-group form-group-wide">
+                    <label for="description">Description</label>
+                    <input type="text" id="description" name="description" maxlength="255"
+                           value="{{ gage['description'] or '' }}">
+                </div>
             </div>
         </div>
-        <div class="form-group">
-            <label for="status">Status</label>
-            <select id="status" name="status">
-                <option value="Active" {{ 'selected' if gage['status'] == 'Active' else '' }}>Active</option>
-                <option value="Inactive" {{ 'selected' if gage['status'] == 'Inactive' else '' }}>Inactive</option>
-                <option value="Out for Calibration" {{ 'selected' if gage['status'] == 'Out for Calibration' else '' }}>Out for Calibration</option>
-            </select>
+
+        <div class="form-section-group">
+            <h3>Manufacturer</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="manufacturer">Manufacturer</label>
+                    <input type="text" id="manufacturer" name="manufacturer" maxlength="100"
+                           value="{{ gage['manufacturer'] or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="model">Model</label>
+                    <input type="text" id="model" name="model" maxlength="100"
+                           value="{{ gage['model'] or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="serial">Serial</label>
+                    <input type="text" id="serial" name="serial" maxlength="100"
+                           value="{{ gage['serial'] or '' }}">
+                </div>
+            </div>
         </div>
+    </div>
+        <div class="form-section-group">
+            <h3>Calibration</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="cert_number">Cert Number</label>
+                    <input type="text" id="cert_number" name="cert_number" value="{{ gage['cert_number'] }}">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cal_date">Cal Date</label>
+                        <input type="date" id="cal_date" name="cal_date" value="{{ gage['cal_date'] }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="interval_years">Interval (Years)</label>
+                        <input type="number" id="interval_years" name="interval_years"
+                               value="{{ gage['interval_years'] }}"
+                               step="0.5" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date</label>
+                        <input type="date" id="due_date" name="due_date" value="{{ gage['due_date'] }}">
+                    </div>
+                </div>
+        </div>
+
+        <div class="form-section-group">
+            <h3>Status</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="condition">Condition</label>
+                    <select id="condition" name="condition">
+                        <option value="" {{ 'selected' if not gage['condition'] else '' }}>Select condition</option>
+                        <option value="In Tolerance" {{ 'selected' if gage['condition'] == 'In Tolerance' else '' }}>In Tolerance</option>
+                        <option value="Adjusted" {{ 'selected' if gage['condition'] == 'Adjusted' else '' }}>Adjusted</option>
+                        <option value="Serviceable" {{ 'selected' if gage['condition'] == 'Serviceable' else '' }}>Serviceable</option>
+                        <option value="Rejected" {{ 'selected' if gage['condition'] == 'Rejected' else '' }}>Rejected</option>
+                        <option value="Fail" {{ 'selected' if gage['condition'] == 'Fail' else '' }}>Fail</option>
+                        <option value="ROV" {{ 'selected' if gage['condition'] == 'ROV' else '' }}>ROV</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status">Status</label>
+                    <select id="status" name="status">
+                        <option value="Active" {{ 'selected' if gage['status'] == 'Active' else '' }}>Active</option>
+                        <option value="Review" {{ 'selected' if gage['status'] == 'Review' else '' }}>Review</option>
+                        <option value="Out of Service" {{ 'selected' if gage['status'] == 'Out of Service' else '' }}>Out of Service</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section-group">
+            <div class="form-group">
+                <label for="comments">Comments</label>
+                <textarea id="comments" name="comments" rows="3" maxlength="500">{{ gage['comments'] or '' }}</textarea>
+            </div>
+        </div>
+
         <div class="form-actions">
             <button type="submit">Save Changes</button>
             <a href="{{ url_for('index') }}" class="btn-cancel">Cancel</a>
@@ -49,3 +133,94 @@
     </form>
 </section>
 {% endblock %}
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const intervalMap = {
+        "Fixed Position Gages": 5,
+        "Dial/Digital": 1,
+        "Thread Ring": 3,
+        "Thread Plug": 3,
+        "Masters": 5
+    };
+
+    const gageType = document.getElementById("gage_type");
+    const intervalField = document.getElementById("interval_years");
+    const calDateField = document.getElementById("cal_date");
+    const dueDateField = document.getElementById("due_date");
+
+    function calculateDueDate() {
+        const calDate = calDateField.value;
+        const interval = intervalField.value;
+
+        if (calDate && interval) {
+            const date = new Date(calDate + "T00:00:00");
+            date.setFullYear(date.getFullYear() + parseInt(interval, 10));
+
+            const yyyy = date.getFullYear();
+            const mm = String(date.getMonth() + 1).padStart(2, "0");
+            const dd = String(date.getDate()).padStart(2, "0");
+
+            dueDateField.value = `${yyyy}-${mm}-${dd}`;
+        } else {
+            dueDateField.value = "";
+        }
+    }
+
+    if (gageType) {
+        gageType.addEventListener("change", function () {
+            const selected = this.value;
+            if (selected in intervalMap) {
+                intervalField.value = intervalMap[selected];
+                calculateDueDate();
+            } else {
+                intervalField.value = "";
+                calculateDueDate();
+            }
+        });
+    }
+
+    if (intervalField) {
+        intervalField.addEventListener("input", calculateDueDate);
+    }
+
+    if (calDateField) {
+        calDateField.addEventListener("change", calculateDueDate);
+        calDateField.addEventListener("input", calculateDueDate);
+    }
+
+    if (gageType && intervalField && calDateField) {
+        if (gageType.value && intervalField.value && calDateField.value) {
+            calculateDueDate();
+        }
+    }
+});
+</script>
+{% endblock %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const intervalMap = {
+            "Fixed Position Gages": 5,
+            "Dial/Digital": 1,
+            "Thread Ring": 3,
+            "Thread Plug": 3,
+            "Masters": 5
+        };
+    
+        const gageType = document.getElementById("gage_type");
+        const intervalField = document.getElementById("interval_years");
+    
+        if (!gageType || !intervalField) {
+            return;
+        }
+    
+        gageType.addEventListener("change", function () {
+            const selected = this.value;
+            if (selected in intervalMap) {
+                intervalField.value = intervalMap[selected];
+            } else {
+                intervalField.value = "";
+            }
+        });
+    });
+    </script>
