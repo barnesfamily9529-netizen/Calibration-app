@@ -33,7 +33,7 @@
         </label>
 
         <button type="submit">Search</button>
-        <a href="{{ url_for('index') }}" class="btn-cancel">Clear</a>
+       
     </form>
 
     {% if gages %}
@@ -44,13 +44,8 @@
                     <th>Gage ID</th>
                     <th>Type</th>
                     <th>Description</th>
-                    <th>Manufacturer</th>
-                    <th>Cert #</th>
-                    <th>Serial</th>
-                    <th>Cal Date</th>
-                    <th>Due Date</th>
-                    <th>Condition</th>
                     <th>Status</th>
+                    <th>Due Date</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -71,18 +66,14 @@
                     <td>{{ gage['gage_id'] }}</td>
                     <td>{{ gage['gage_type'] or '-' }}</td>
                     <td>{{ gage['description'] or '-' }}</td>
-                    <td>{{ gage['manufacturer'] or '-' }}</td>
-                    <td>{{ gage['cert_number'] or '-' }}</td>
-                    <td>{{ gage['serial'] or '-' }}</td>
-                    <td>{{ gage['cal_date'] or '-' }}</td>
-                    <td>{{ gage['due_date'] or '-' }}</td>
-                    <td>{{ gage['condition'] or '-' }}</td>
                     <td>
                         <span class="status-pill status-{{ (gage['status'] or 'active')|lower|replace(' ', '-') }}">
                             {{ gage['status'] }}
                         </span>
                     </td>
+                    <td>{{ gage['due_date'] or '-' }}</td>
                     <td class="actions">
+                        <a href="{{ url_for('edit', gage_pk=gage['id']) }}">View</a>
                         <a href="{{ url_for('edit', gage_pk=gage['id']) }}">Edit</a>
                         <form action="{{ url_for('delete', gage_pk=gage['id']) }}" method="post" class="inline"
                               onsubmit="return confirm('Delete this gage?');">
