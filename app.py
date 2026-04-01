@@ -103,7 +103,6 @@ def _get_form_gage(request):
 
 
 @app.route("/")
-@app.route("/")
 def index():
     """List and filter calibration gages."""
     from datetime import date, timedelta
@@ -111,6 +110,8 @@ def index():
     search = (request.args.get("search") or "").strip()
     status_filter = (request.args.get("status") or "").strip()
     overdue_only = request.args.get("overdue") == "1"
+    sort_by = request.args.get("sort_by", "due_date")
+    sort_dir = request.args.get("sort_dir", "asc")
 
     conn = get_db()
 
@@ -133,10 +134,27 @@ def index():
         query += " AND status = ?"
         params.append(status_filter)
 
-    query += " ORDER BY due_date ASC, gage_id ASC"
-
     gages = conn.execute(query, params).fetchall()
     conn.close()
+
+    valid_sort_fields = {
+        "gage_id": "gage_id",
+        "gage_type": "gage_type",
+        "description": "description",
+        "status": "status",
+        "condition": "condition",
+        "manufacturer": "manufacturer",
+        "due_date": "due_date",
+    }
+
+    sort_field = valid_sort_fields.get(sort_by, "due_date")
+    reverse_sort = sort_dir == "desc"
+
+    def sort_key(g):
+        value = g[sort_field] or ""
+        return str(value).lower()
+
+    gages = sorted(gages, key=sort_key, reverse=reverse_sort)
 
     today = date.today()
     today_iso = today.isoformat()
@@ -162,9 +180,9 @@ def index():
         search=search,
         status_filter=status_filter,
         overdue_only=overdue_only,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
-
-
 @app.route("/add", methods=["GET", "POST"])
 def add():
     """Add a new calibration gage."""

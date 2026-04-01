@@ -17,9 +17,9 @@
         <select name="status">
             <option value="">All Statuses</option>
             <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
-            <option value="Inactive" {% if status_filter == 'Inactive' %}selected{% endif %}>Inactive</option>
             <option value="Out of Service" {% if status_filter == 'Out of Service' %}selected{% endif %}>Out of Service</option>
-            <option value="Review" {% if status_filter == 'Review' %}selected{% endif %}>Review</option>
+            <option value="Missing" {% if status_filter == 'Missing' %}selected{% endif %}>Missing</option>
+            <option value="Stored" {% if status_filter == 'Stored' %}selected{% endif %}>Stored</option>
         </select>
 
         <label class="checkbox-label">
@@ -45,6 +45,8 @@
                     <th>Type</th>
                     <th>Description</th>
                     <th>Status</th>
+                    <th>Condition</th>
+                    <th>Manufacturer</th>
                     <th>Due Date</th>
                     <th>Actions</th>
                 </tr>
@@ -66,20 +68,18 @@
                     <td>{{ gage['gage_id'] }}</td>
                     <td>{{ gage['gage_type'] or '-' }}</td>
                     <td>{{ gage['description'] or '-' }}</td>
+                
                     <td>
                         <span class="status-pill status-{{ (gage['status'] or '')|lower|replace(' ', '-') }}">
-                            {{ gage['status'] }}
+                            {{ gage['status'] or '-' }}
                         </span>
                     </td>
+                
                     <td>{{ gage['condition'] or '-' }}</td>
                     <td>{{ gage['manufacturer'] or '-' }}</td>
-                    <td>{{ gage['serial'] or '-' }}</td>
-                    <td>{{ gage['cert_number'] or '-' }}</td>
-                    <td>{{ gage['cal_date'] or '-' }}</td>
-                    <td>{{ gage['interval_years'] or '-' }}</td>
                     <td>{{ gage['due_date'] or '-' }}</td>
-                    <td>{{ gage['comments'] or '-' }}</td>
-                    <td>
+                
+                    <td class="actions-cell">
                         <a href="{{ url_for('edit', gage_pk=gage['id']) }}">Edit</a>
                         <a href="{{ url_for('delete', gage_pk=gage['id']) }}" onclick="return confirm('Delete this gage?');">Delete</a>
                     </td>
