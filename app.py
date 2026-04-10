@@ -48,11 +48,13 @@ def init_db():
             due_date TEXT,
             interval_years REAL,
             condition TEXT,
-            status TEXT DEFAULT 'Active',
+            status TEXT DEFAULT 'In Service',
             comments TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # One-time cleanup: convert Active -> In Service
+   
     conn.commit()
     conn.close()
 
@@ -84,7 +86,7 @@ def _get_form_gage(request):
             pass
 
     return {
-        "gage_id": _strip(request.form.get("gage_id")),
+        "gage_id": _strip(request.form.get("gage_id")).upper(),
         "month_code": _strip(request.form.get("month_code")),
         "number": _strip(request.form.get("number")),
         "gage_type": _strip(request.form.get("gage_type")),
@@ -97,7 +99,7 @@ def _get_form_gage(request):
         "due_date": due_date,
         "interval_years": interval_years,
         "condition": _strip(request.form.get("condition")),
-        "status": _strip(request.form.get("status")) or "Active",
+        "status": _strip(request.form.get("status")) or "In Service",
         "comments": _strip(request.form.get("comments")),
     }
 
@@ -168,7 +170,7 @@ def index():
         for gage in gages:
             due_date = gage["due_date"] or ""
             status = gage["status"] or ""
-            if due_date and status == "Active" and due_date < today_iso:
+            if due_date and status not in ["Stored", "Missing", "Out of Service"] and due_date < today_iso:
                 filtered_gages.append(gage)
         gages = filtered_gages
 

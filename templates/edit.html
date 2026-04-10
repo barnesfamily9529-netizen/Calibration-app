@@ -112,7 +112,7 @@
                     <label for="status">Status</label>
                     <select id="status" name="status">
                         <option value="" {{ 'selected' if not gage['status'] else '' }}>Select Status</option>
-                        <option value="Active" {{ 'selected' if gage['status'] == 'Active' else '' }}>Active</option>
+                        <option value="In Service" {{ 'selected' if gage['status'] == 'In Service' else '' }}>In Service</option>
                         <option value="Out of Service" {{ 'selected' if gage['status'] == 'Out of Service' else '' }}>Out of Service</option>
                         <option value="Missing" {{ 'selected' if gage['status'] == 'Missing' else '' }}>Missing</option>
                         <option value="Stored" {{ 'selected' if gage['status'] == 'Stored' else '' }}>Stored</option>

@@ -16,7 +16,7 @@
 
         <select name="status">
             <option value="">All Statuses</option>
-            <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+            <option value="In Service" {% if status_filter == 'In Service' %}selected{% endif %}>In Service</option>
             <option value="Out of Service" {% if status_filter == 'Out of Service' %}selected{% endif %}>Out of Service</option>
             <option value="Missing" {% if status_filter == 'Missing' %}selected{% endif %}>Missing</option>
             <option value="Stored" {% if status_filter == 'Stored' %}selected{% endif %}>Stored</option>
@@ -48,22 +48,25 @@
                     <th>Condition</th>
                     <th>Manufacturer</th>
                     <th>Due Date</th>
+                    <th>Calibration State</th>
                     <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for gage in gages %}
                 {% set due_date = gage['due_date'] or '' %}
-                {% set row_class = '' %}
-            
-                {% if due_date and gage['status'] != 'Stored' %}
-                    {% if due_date < today %}
-                        {% set row_class = 'overdue' %}
-                    {% elif due_soon_dates and due_date in due_soon_dates %}
-                        {% set row_class = 'due-soon' %}
-                    {% endif %}
+                {% set cal_state = '' %}
+
+                {% if gage['status'] != 'In Service' %}
+                    {% set cal_state = 'N/A' %}
+                {% elif due_date and due_date < today %}
+                    {% set cal_state = 'Overdue' %}
+                {% elif due_soon_dates and due_date in due_soon_dates %}
+                    {% set cal_state = 'Due Soon' %}
+                {% else %}
+                    {% set cal_state = 'In Calibration' %}
                 {% endif %}
-            
+                
                 <tr class="{{ row_class }}">
                     <td>{{ gage['gage_id'] }}</td>
                     <td>{{ gage['gage_type'] or '-' }}</td>
@@ -78,7 +81,7 @@
                     <td>{{ gage['condition'] or '-' }}</td>
                     <td>{{ gage['manufacturer'] or '-' }}</td>
                     <td>{{ gage['due_date'] or '-' }}</td>
-                
+                    <td>{{ cal_state }}</td>                
                     <td class="actions-cell">
                         <a href="{{ url_for('edit', gage_pk=gage['id']) }}">Edit</a>
                         <a href="{{ url_for('delete', gage_pk=gage['id']) }}" onclick="return confirm('Delete this gage?');">Delete</a>
