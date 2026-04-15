@@ -6,7 +6,7 @@
 <section class="form-section form-wide">
     <h2>Edit Calibration Gage</h2>
 
-    <form method="post" action="{{ url_for('edit', gage_pk=gage['id']) }}">
+    <form method="post" action="{{ url_for('edit', gage_pk=gage['id']) }}" enctype="multipart/form-data">
         <div class="form-section-group">
             <h3>Identification</h3>
             <div class="form-row">
@@ -75,22 +75,21 @@
                     <input type="text" id="cert_number" name="cert_number" value="{{ gage['cert_number'] }}">
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="cal_date">Cal Date</label>
-                        <input type="date" id="cal_date" name="cal_date" value="{{ gage['cal_date'] }}">
-                    </div>
-                    <div class="form-group">
-                        <label for="interval_years">Interval (Years)</label>
-                        <input type="number" id="interval_years" name="interval_years"
-                               value="{{ gage['interval_years'] }}"
-                               step="0.5" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label for="due_date">Due Date</label>
-                        <input type="date" id="due_date" name="due_date" value="{{ gage['due_date'] }}">
-                    </div>
+                <div class="form-group">
+                    <label for="cal_date">Calibration Date</label>
+                    <input ...>
                 </div>
+                
+                <div class="form-group">
+                    <label for="due_date">Due Date</label>
+                    <input ...>
+                </div>
+                
+                <!-- ✅ INSERT RIGHT HERE -->
+                <div class="form-group">
+                    <label for="certificate">Upload Certificate</label>
+                    <input type="file" id="certificate" name="certificate" accept=".pdf,.jpg,.jpeg,.png">
+                </div>                  
         </div>
 
         <div class="form-section-group">

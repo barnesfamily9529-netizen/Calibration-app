@@ -3,14 +3,21 @@ Calibration Gage Management - Flask Application
 Simple web app for managing calibration gages with SQLite backend.
 """
 
+import os
 import sqlite3
 from pathlib import Path
 
 from flask import Flask, render_template, request, redirect, url_for, flash
+from werkzeug.utils import secure_filename
 
 DATABASE = Path(__file__).parent / "calibration.db"
+UPLOAD_FOLDER = "uploads/certificates"
+
 app = Flask(__name__)
 app.secret_key = "calibration-app-secret-key"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 
 def get_db():
@@ -53,8 +60,23 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # One-time cleanup: convert Active -> In Service
-   
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS certificates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            gage_id INTEGER NOT NULL,
+            original_filename TEXT,
+            stored_filename TEXT NOT NULL,
+            file_path TEXT NOT NULL,
+            cert_number TEXT,
+            cal_date TEXT,
+            due_date TEXT,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            notes TEXT,
+            FOREIGN KEY (gage_id) REFERENCES gages(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -67,13 +89,13 @@ def _strip(value):
     return s if s else None
 
 
-def _get_form_gage(request):
+def _get_form_gage(request_obj):
     """Extract gage data from request form."""
     from datetime import datetime, timedelta
 
-    interval = request.form.get("interval_years", "").strip()
-    cal_date = _strip(request.form.get("cal_date")) or None
-    due_date = _strip(request.form.get("due_date")) or None
+    interval = request_obj.form.get("interval_years", "").strip()
+    cal_date = _strip(request_obj.form.get("cal_date")) or None
+    due_date = _strip(request_obj.form.get("due_date")) or None
 
     interval_years = float(interval) if interval else None
 
@@ -85,23 +107,64 @@ def _get_form_gage(request):
         except ValueError:
             pass
 
+    gage_id_raw = _strip(request_obj.form.get("gage_id"))
+    gage_id = gage_id_raw.upper() if gage_id_raw else None
+
     return {
-        "gage_id": _strip(request.form.get("gage_id")).upper(),
-        "month_code": _strip(request.form.get("month_code")),
-        "number": _strip(request.form.get("number")),
-        "gage_type": _strip(request.form.get("gage_type")),
-        "description": _strip(request.form.get("description")),
-        "manufacturer": _strip(request.form.get("manufacturer")),
-        "model": _strip(request.form.get("model")),
-        "serial": _strip(request.form.get("serial")),
-        "cert_number": _strip(request.form.get("cert_number")),
+        "gage_id": gage_id,
+        "month_code": _strip(request_obj.form.get("month_code")),
+        "number": _strip(request_obj.form.get("number")),
+        "gage_type": _strip(request_obj.form.get("gage_type")),
+        "description": _strip(request_obj.form.get("description")),
+        "manufacturer": _strip(request_obj.form.get("manufacturer")),
+        "model": _strip(request_obj.form.get("model")),
+        "serial": _strip(request_obj.form.get("serial")),
+        "cert_number": _strip(request_obj.form.get("cert_number")),
         "cal_date": cal_date,
         "due_date": due_date,
         "interval_years": interval_years,
-        "condition": _strip(request.form.get("condition")),
-        "status": _strip(request.form.get("status")) or "In Service",
-        "comments": _strip(request.form.get("comments")),
+        "condition": _strip(request_obj.form.get("condition")),
+        "status": _strip(request_obj.form.get("status")) or "In Service",
+        "comments": _strip(request_obj.form.get("comments")),
     }
+
+
+def save_certificate(conn, gage_db_id, cert_number, cal_date, due_date, file_obj):
+    """Save uploaded certificate file and insert history row."""
+    if not file_obj or not file_obj.filename:
+        return
+
+    filename = secure_filename(file_obj.filename)
+    if not filename:
+        return
+
+    stored_filename = f"{gage_db_id}_{filename}"
+    file_path = os.path.join(app.config["UPLOAD_FOLDER"], stored_filename)
+
+    file_obj.save(file_path)
+
+    conn.execute(
+        """
+        INSERT INTO certificates (
+            gage_id,
+            original_filename,
+            stored_filename,
+            file_path,
+            cert_number,
+            cal_date,
+            due_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            gage_db_id,
+            filename,
+            stored_filename,
+            file_path,
+            cert_number,
+            cal_date,
+            due_date,
+        ),
+    )
 
 
 @app.route("/")
@@ -185,6 +248,8 @@ def index():
         sort_by=sort_by,
         sort_dir=sort_dir,
     )
+
+
 @app.route("/add", methods=["GET", "POST"])
 def add():
     """Add a new calibration gage."""
@@ -197,24 +262,55 @@ def add():
         conn = get_db()
         try:
             conn.execute(
-                """INSERT INTO gages (
+                """
+                INSERT INTO gages (
                     gage_id, month_code, number, gage_type, description,
                     manufacturer, model, serial, cert_number, cal_date,
                     due_date, interval_years, condition, status, comments
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
                 (
-                    g["gage_id"], g["month_code"], g["number"], g["gage_type"],
-                    g["description"], g["manufacturer"], g["model"], g["serial"],
-                    g["cert_number"], g["cal_date"], g["due_date"],
-                    g["interval_years"], g["condition"], g["status"], g["comments"],
+                    g["gage_id"],
+                    g["month_code"],
+                    g["number"],
+                    g["gage_type"],
+                    g["description"],
+                    g["manufacturer"],
+                    g["model"],
+                    g["serial"],
+                    g["cert_number"],
+                    g["cal_date"],
+                    g["due_date"],
+                    g["interval_years"],
+                    g["condition"],
+                    g["status"],
+                    g["comments"],
                 ),
             )
+
+            new_gage_id = conn.execute(
+                "SELECT id FROM gages WHERE gage_id = ?",
+                (g["gage_id"],),
+            ).fetchone()["id"]
+
+            file = request.files.get("certificate")
+            save_certificate(
+                conn,
+                new_gage_id,
+                g["cert_number"],
+                g["cal_date"],
+                g["due_date"],
+                file,
+            )
+
             conn.commit()
             flash("Gage added successfully.", "success")
             return redirect(url_for("index"))
+
         except sqlite3.IntegrityError:
             flash("A gage with this ID already exists.", "error")
             return redirect(url_for("add"))
+
         finally:
             conn.close()
 
@@ -241,23 +337,48 @@ def edit(gage_pk):
 
         try:
             conn.execute(
-                """UPDATE gages SET
+                """
+                UPDATE gages SET
                     gage_id=?, month_code=?, number=?, gage_type=?, description=?,
                     manufacturer=?, model=?, serial=?, cert_number=?, cal_date=?,
                     due_date=?, interval_years=?, condition=?, status=?, comments=?
-                    WHERE id=?""",
+                WHERE id=?
+                """,
                 (
-                    g["gage_id"], g["month_code"], g["number"], g["gage_type"],
-                    g["description"], g["manufacturer"], g["model"], g["serial"],
-                    g["cert_number"], g["cal_date"], g["due_date"],
-                    g["interval_years"], g["condition"], g["status"], g["comments"],
+                    g["gage_id"],
+                    g["month_code"],
+                    g["number"],
+                    g["gage_type"],
+                    g["description"],
+                    g["manufacturer"],
+                    g["model"],
+                    g["serial"],
+                    g["cert_number"],
+                    g["cal_date"],
+                    g["due_date"],
+                    g["interval_years"],
+                    g["condition"],
+                    g["status"],
+                    g["comments"],
                     gage_pk,
                 ),
             )
+
+            file = request.files.get("certificate")
+            save_certificate(
+                conn,
+                gage_pk,
+                g["cert_number"],
+                g["cal_date"],
+                g["due_date"],
+                file,
+            )
+
             conn.commit()
             flash("Gage updated successfully.", "success")
             conn.close()
             return redirect(url_for("index"))
+
         except sqlite3.IntegrityError:
             flash("A gage with this ID already exists.", "error")
             conn.close()
